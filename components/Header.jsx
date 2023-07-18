@@ -88,10 +88,10 @@ export default function Header() {
               params: [
                 {
                   chainId: '0x1f90',
-                  chainName: 'Shardeum Liberty',
-                  rpcUrls: ['https://liberty20.shardeum.org'],
+                  chainName: 'MUMBAI',
+                  rpcUrls: ['https://polygon-testnet.public.blastapi.io'],
                   blockExplorerUrls: [
-                    'https://explorer.liberty20.shardeum.org/',
+                    'https://mumbai.polygonscan.com/',
                   ],
                   nativeCurrency: {
                     symbol: 'SHM',
