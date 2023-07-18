@@ -3,56 +3,64 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
-contract TokenContract is ERC1155 {
+contract TokenContract is ERC20 {
 
     using SafeMath for uint256;
 
     address public minter;
     uint256 public supply;
-    uint256 public tokenId;
 
-    event Mint(address _recipient, uint256 _amount, uint256 _tokenId);
+    event Mint(address _recipent, uint256 _amount);
     event SetMinter(address _minter);
 
     constructor(
-        string memory _uri,
+        string memory _name,
+        string memory _symbol,
         uint256 _supply,
         address _minter
-    ) ERC1155(_uri) {
-        supply = _supply;
-        minter = _minter;
-        tokenId = 0;
+    ) ERC20(_name, _symbol) {
+        supply=_supply;
+        minter=_minter;
+
     }
 
-    modifier onlyMinter() {
+         modifier onlyMinter() {
         require(msg.sender == minter, "Not Minter");
+        
         _;
     }
 
-    modifier checkSupply(uint256 _amount) {
-        require(totalSupply(tokenId) + _amount <= supply, "Supply Overflow");
+        modifier checkSupply(uint256 _amount) {
+        require(totalSupply().add(_amount) <= supply, "Supply Overflow");
+        
         _;
     }
 
     function mintTokens(uint256 _amount) external onlyMinter() checkSupply(_amount) {
-        tokenId++;
-        _mint(msg.sender, tokenId, _amount, "");
-        emit Mint(msg.sender, _amount, tokenId);
+        _mint(msg.sender, _amount);
+
+        emit Mint(msg.sender, _amount);
     }
 
+
+
     function setMinter(address _minter) external onlyMinter() {
-        minter = _minter;
+        minter=_minter;
+
         emit SetMinter(_minter);
     }
+
+
 }
+
 
 contract TokenFactory {
 
     address public owner;
     uint256 public payableFees = 0.1 ether;
     address[] public tokensCreated;
+
 
     mapping(address => string) public tokenName;
     mapping(address => address[]) public creatorsMap;
@@ -68,26 +76,34 @@ contract TokenFactory {
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not Owner");
+
         _;
     }
 
     modifier payableAmt() {
         require(msg.value == payableFees, "Invalid Amount");
+
         _;
     }
 
-    function getTokensCreatedLength(address _minter) external view returns(uint) {
-        return creatorsMap[_minter].length;
+
+    function getTokensCreatedLength(address _minter) external view returns(uint)  {
+        uint size = creatorsMap[_minter].length;
+        return size;
+
     }
 
     function createToken(
         string memory _name,
         string memory _symbol,
-        uint256 _supply,
-        string memory _uri
+        uint256 _supply
     ) external payable payableAmt() {
-        _deployToken(_name, _symbol, _supply, msg.sender, _uri);
+        
+        _deployToken(_name, _symbol, _supply, msg.sender);
+        
     }
+
+
 
     function withdrawFees(address payable _sendTo) external onlyOwner {
         emit WithdrawFees(_sendTo, address(this).balance);
@@ -108,12 +124,17 @@ contract TokenFactory {
         string memory _name,
         string memory _symbol,
         uint256 _supply,
-        address _minter,
-        string memory _uri
+        address _minter
     ) internal {
-        TokenContract token = new TokenContract(_uri, _supply, _minter);
+        TokenContract token = new TokenContract(
+            _name,
+            _symbol,
+            _supply,
+            _minter
+        );
         tokenName[address(token)] = _name;
         tokensCreated.push(address(token));
+
         creatorsMap[_minter].push(address(token));
         emit TokenCreated(address(token));
     }
